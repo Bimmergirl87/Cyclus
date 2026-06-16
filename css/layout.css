@@ -1,0 +1,94 @@
+/* ── app shell: body, topbar, controls, info, iframe ── */
+body.app-page {
+  font-family: sans-serif;
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 24px 20px 30vh;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.25s, color 0.25s;
+}
+
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+h1.app-title { color: var(--accent); font-size: 1.5em; margin: 0; }
+
+/* theme toggle */
+.theme-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 1em;
+  cursor: pointer;
+  color: var(--text-on-page);
+  transition: border-color 0.2s, color 0.2s;
+}
+.theme-btn:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+html.dark-mode .theme-btn { border-color: var(--border-subtle); }
+html.dark-mode .theme-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* controls */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.controls label { font-size: 1em; color: var(--text-on-page); }
+input[type="date"] {
+  padding: 7px 12px;
+  font-size: 1em;
+  border: 1px solid var(--border-input);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text);
+  color-scheme: light dark;
+}
+.info-next-mens { color: #c0304a; font-weight: 600; }
+
+.info.info-mens {
+  color: #9b3080;
+  background: color-mix(in srgb, #9b3080 12%, var(--bg-card));
+  border-left-color: #9b3080;
+  white-space: nowrap;
+}
+
+.info {
+  padding: 8px 14px;
+  background: color-mix(in srgb, #3a7a5a 10%, var(--bg-card));
+  border-left: 4px solid #3a7a5a;
+  border-radius: 4px;
+  font-size: 0.95em;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  color: #3a7a5a;
+}
+
+html.dark-mode .info {
+  color: #72b888;
+  background: color-mix(in srgb, #72b888 12%, var(--bg-card));
+  border-left-color: #72b888;
+}
+html.dark-mode .info.info-mens {
+  color: #c870b0;
+  background: color-mix(in srgb, #c870b0 12%, var(--bg-card));
+  border-left-color: #c870b0;
+}
+html.dark-mode .info-next-mens { color: #e06878; }
+
+/* chart iframe */
+#cyclusFrame {
+  width: 100%; height: 430px; border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.25);
+  display: block;
+  background: var(--chart-body-bg);
+}

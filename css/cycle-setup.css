@@ -1,0 +1,145 @@
+/* ── cycle setup block ──────────────────────────── */
+.cycle-setup {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+.cycle-setup-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  text-align: left;
+}
+.cycle-setup-title:hover { color: var(--text-muted); }
+.cycle-setup-arrow { font-size: 0.8em; flex-shrink: 0; }
+.cycle-setup-summary {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cycle-setup-body {
+  display: none;
+  padding: 0 20px 16px;
+}
+.cycle-setup.open .cycle-setup-body { display: block; }
+.cycle-setup-desc {
+  font-size: 0.86em;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+.cycle-date-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.cycle-date-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cycle-date-row label {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  width: 100px;
+  flex-shrink: 0;
+}
+.cycle-date-warn {
+  flex-basis: 100%;
+  margin-left: 110px;
+  font-size: 0.8em;
+  color: var(--accent);
+  line-height: 1.4;
+}
+.btn-add-date {
+  background: none;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.83em;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-add-date:hover { border-color: var(--btn-log); color: var(--btn-log); }
+.btn-remove-date {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 1em;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+  border-radius: 4px;
+}
+.btn-remove-date:hover { color: var(--accent); background: var(--accent-bg); }
+.cycle-calc-result {
+  font-size: 0.88em;
+  color: var(--text-muted);
+  min-height: 1.2em;
+}
+
+/* ── cycluslengte per datumregel ──────────────────── */
+.cyc-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.cyc-inline-empty::before {
+  content: "— geen vorige menstruatie";
+  font-size: 0.76em;
+  color: var(--text-faint);
+  font-style: italic;
+}
+.cyc-bar-track {
+  position: relative;
+  flex: none;
+  width: 120px;
+  height: 12px;
+  background: var(--border-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.cyc-bar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--btn-log, var(--accent));
+  border-radius: 4px;
+  opacity: 0.8;
+  transition: width 0.25s ease;
+}
+.cyc-bar-unusual { background: var(--accent); opacity: 0.9; }
+/* gemiddelde-lijn op zijn (ingezoomde) positie in de balk */
+.cyc-avg-mark {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 0;
+  border-left: 2px solid var(--text);
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+.cyc-bar-val {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: 34px;
+  text-align: right;
+}

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyclus Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/cycle-setup.css">
+    <link rel="stylesheet" href="css/phase.css">
+    <link rel="stylesheet" href="css/log.css">
+    <link rel="stylesheet" href="css/buttons.css">
+    <link rel="stylesheet" href="css/calendar.css">
+    <link rel="stylesheet" href="css/history.css">
+</head>
+<body class="app-page">
+    <div class="app-topbar">
+        <h1 class="app-title">Cyclus Tracker</h1>
+        <button class="theme-btn" id="themeBtn" title="Schakel thema">☀</button>
+    </div>
+
+    <div class="controls">
+        <label for="startDate">Eerste dag laatste menstruatie:</label>
+        <input type="date" id="startDate">
+        <div class="info" id="info">Kies een datum om je positie in de cyclus te zien.</div>
+        <div class="info info-mens" id="infoNextMens" style="display:none"></div>
+    </div>
+
+    <div class="cycle-setup" id="cycleSetup">
+        <button class="cycle-setup-title" id="cycleSetupBtn">
+            <span class="cycle-setup-arrow">▶</span> Cycluslengte bepalen
+            <span class="cycle-setup-summary" id="cycleSetupSummary"></span>
+        </button>
+        <div class="cycle-setup-body" id="cycleSetupBody">
+            <p class="cycle-setup-desc">Voer de eerste dag van opeenvolgende menstruaties in. De volgorde maakt niet uit, we sorteren ze zelf. Hoe meer datums, hoe nauwkeuriger het gemiddelde. De meest recente datum wordt automatisch als startpunt ingesteld.</p>
+            <div class="cycle-date-list" id="cycleDateList"></div>
+            <button class="btn-add-date" id="addCycleDateBtn">+ Datum toevoegen</button>
+            <div class="cycle-calc-result" id="cycleCalcResult"></div>
+        </div>
+    </div>
+
+    <iframe id="cyclusFrame" src="menstruatiecyclus.html"
+            scrolling="no" title="Hormoonspiegels cyclus"></iframe>
+
+    <!-- fase-uitleg (alleen informatie) -->
+    <div id="phase-panel">
+        <div class="phase-header" id="phase-header">
+            <h2 id="phase-name"></h2>
+            <div class="phase-days" id="phase-days"></div>
+        </div>
+
+        <!-- blok 1: objectief -->
+        <div class="phase-body">
+            <div class="phase-description" id="phase-desc"></div>
+            <div>
+                <p class="section-title">Hormoonlevels</p>
+                <div id="hormone-rows"></div>
+            </div>
+            <div>
+                <div class="phase-sym-titlerow">
+                    <p class="section-title">Symptomen in deze fase</p>
+                    <div class="phase-sym-toggle">
+                        <button class="pst-btn active" data-tab="typical">Typisch</button>
+                        <button class="pst-btn" data-tab="user">Jij</button>
+                    </div>
+                </div>
+                <div id="phase-sym-container"></div>
+                <div id="phase-sym-compare"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- blok 2: activiteiten & tips -->
+    <div id="activity-panel" style="display:none">
+        <div class="activity-header" id="activity-header">Activiteiten &amp; tips</div>
+        <div class="activity-body">
+            <div class="phase-insights" id="phase-insights"></div>
+            <div id="phase-tips"></div>
+        </div>
+    </div>
+
+    <!-- scheiding -->
+    <div class="section-divider">
+        <span class="section-divider-label">Loggen &amp; beheer</span>
+    </div>
+
+    <!-- logblok -->
+    <div class="log-section">
+        <div class="log-section-header">
+            Dagboek
+        </div>
+        <div class="log-section-body">
+            <div class="log-top">
+                <label>Datum: <input type="date" id="logDate"></label>
+                <span class="save-feedback" id="saveFeedback">Opgeslagen ✓</span>
+            </div>
+
+            <div class="log-accordion">
+                <button class="log-acc-hd" data-acc="accKlachten">
+                    <span class="log-acc-arrow">▼</span>
+                    <span class="log-acc-title">Symptomen</span>
+                    <span class="log-acc-summary" id="accSumKlachten"></span>
+                    <span class="log-acc-action sym-settings-btn" id="symSettingsBtn" title="Symptomen aanpassen">⚙</span>
+                </button>
+                <div class="log-acc-body open" id="accKlachten">
+                    <div class="sym-settings-panel" id="symSettingsPanel">
+                        <div class="sym-grid">
+                            <div></div>
+                            <div class="sym-col-hd">Fysiek</div>
+                            <div class="sym-col-hd">Mentaal &amp; emotioneel</div>
+
+                            <div class="sym-row-hd">Tonen</div>
+                            <div class="sym-col-wrap">
+                                <div class="sym-dropzone" id="shownFysiekZone"></div>
+                                <div class="sym-col-add-row" id="addFysiekRow">
+                                    <button class="sym-col-plus" data-action="toggleAddSym" data-category="Fysiek" title="Eigen symptoom toevoegen">+</button>
+                                    <input type="text" class="sym-col-add-input" id="addFysiekInput" placeholder="Naam…">
+                                    <button class="sym-col-add-ok btn-anders" data-action="commitAddSym" data-category="Fysiek">+</button>
+                                </div>
+                            </div>
+                            <div class="sym-col-wrap">
+                                <div class="sym-dropzone" id="shownMentaalZone"></div>
+                                <div class="sym-col-add-row" id="addMentaalRow">
+                                    <button class="sym-col-plus" data-action="toggleAddSym" data-category="Mentaal &amp; emotioneel" title="Eigen symptoom toevoegen">+</button>
+                                    <input type="text" class="sym-col-add-input" id="addMentaalInput" placeholder="Naam…">
+                                    <button class="sym-col-add-ok btn-anders" data-action="commitAddSym" data-category="Mentaal &amp; emotioneel">+</button>
+                                </div>
+                            </div>
+
+                            <div class="sym-row-hd">Niet tonen</div>
+                            <div class="sym-dropzone" id="hiddenFysiekZone"></div>
+                            <div class="sym-dropzone" id="hiddenMentaalZone"></div>
+                        </div>
+                    </div>
+                    <div class="symptom-grid" id="symptomGrid"></div>
+                </div>
+            </div>
+
+            <div class="log-accordion">
+                <button class="log-acc-hd" data-acc="accWerkt">
+                    <span class="log-acc-arrow">▶</span>
+                    <span class="log-acc-title">Activiteiten &amp; tips</span>
+                    <span class="log-acc-summary" id="accSumWerkt"></span>
+                </button>
+                <div class="log-acc-body" id="accWerkt">
+                    <div class="works-fields">
+                        <div class="works-grid-section">
+                            <div class="works-grid-hd works-pos"><span>Wat werkte voor je vandaag?</span><button class="works-edit-btn" id="worksWellEditBtn" data-action="toggleTipsEdit" data-type="well">Bewerk</button></div>
+                            <div class="works-checkgrid" id="worksWellGrid"></div>
+                            <div class="works-add-row">
+                                <input type="text" class="works-add-input" id="worksWellInput" placeholder="Toevoegen…">
+                                <button class="btn-anders" data-action="addTipItem" data-type="well">+</button>
+                            </div>
+                        </div>
+                        <div class="works-grid-section">
+                            <div class="works-grid-hd works-neg"><span>Wat werkte tegen je vandaag?</span><button class="works-edit-btn" id="worksNotEditBtn" data-action="toggleTipsEdit" data-type="not">Bewerk</button></div>
+                            <div class="works-checkgrid" id="worksNotGrid"></div>
+                            <div class="works-add-row">
+                                <input type="text" class="works-add-input" id="worksNotInput" placeholder="Toevoegen…">
+                                <button class="btn-anders" data-action="addTipItem" data-type="not">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="log-accordion">
+                <button class="log-acc-hd" data-acc="accNotities">
+                    <span class="log-acc-arrow">▶</span>
+                    <span class="log-acc-title">Notities</span>
+                    <span class="log-acc-summary" id="accSumNotities"></span>
+                </button>
+                <div class="log-acc-body" id="accNotities">
+                    <textarea id="logNotes" placeholder="Extra notities (optioneel)…"></textarea>
+                </div>
+            </div>
+
+            <div class="log-save-row">
+                <p class="log-cycleday-hint" id="cycleDayHint" style="display:none">Stel een <a href="#startDate" id="focusStartDateLink">startdatum</a> in om de cyclus dag automatisch op te slaan.</p>
+                <button class="btn-save" id="saveLogBtn">Opslaan</button>
+            </div>
+
+            <div class="log-history-divider"></div>
+
+            <div class="log-history-block">
+                <button class="history-toggle" id="historyToggleBtn">
+                    <span class="history-toggle-text">Geschiedenis tonen</span>
+                    <span class="history-toggle-count" id="historyCount"></span>
+                </button>
+                <div class="log-history-body" id="accHistory">
+                    <div id="logHistory"><p class="history-empty">Nog niets gelogd.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- cyclus in je agenda blok -->
+    <div class="log-section">
+        <div class="log-section-header" style="cursor:pointer" data-section="calExportBody">
+            <span><span class="log-sec-arrow">▼</span> Plannen op het ritme van je cyclus</span>
+        </div>
+        <div class="cal-export-body" id="calExportBody">
+            <p class="cal-export-desc">
+                Zet je cyclus in je agenda, zodat je bij het maken van plannen meteen ziet in welke fase
+                en op welke cyclusdag een datum valt, ook weken vooruit. Zo kun je afspraken, reizen of drukke
+                periodes afstemmen op hoe je je dan waarschijnlijk voelt.
+            </p>
+            <p class="cal-export-desc">
+                Je krijgt één all-day event per dag, met per fase de kenmerken en symptomen die je zelf kiest.
+                Generieke symptomen zijn gebaseerd op gemiddelde waarden per fase voor de meeste vrouwen; eigen symptomen komen uit jouw eigen gelogde klachten per fase.
+                <a class="cal-export-more-link" id="calExportMoreLink">Toon meer…</a>
+            </p>
+            <div class="cal-export-more" id="calExportMore" style="display:none">
+            <div class="ics-params">
+                <div class="ics-param-row">
+                    <div class="ics-param-group">
+                        <label class="ics-param-label" for="icsStartDate">Eerste dag laatste menstruatie</label>
+                        <input type="date" id="icsStartDate" class="ics-param-input">
+                    </div>
+                    <div class="ics-param-group">
+                        <label class="ics-param-label" for="icsCycleLen">Cycluslengte</label>
+                        <div class="ics-param-with-unit">
+                            <input type="number" id="icsCycleLen" class="ics-param-input ics-param-no-spin" min="21" max="45" value="28">
+                            <span class="ics-param-unit">dagen</span>
+                        </div>
+                    </div>
+                    <div class="ics-param-group">
+                        <label class="ics-param-label" for="icsMonths">Exporteer periode vooruit</label>
+                        <select id="icsMonths" class="ics-months-select">
+                            <option value="1">1 maand</option>
+                            <option value="2" selected>2 maanden</option>
+                            <option value="3">3 maanden</option>
+                            <option value="6">6 maanden</option>
+                            <option value="12">12 maanden</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="ics-preview-section">
+                <div class="ics-preview-title">Agenda item</div>
+                <div class="ics-title-style-row">
+                    <label class="ics-param-label" for="icsTitleStyle">Titel van agenda-item</label>
+                    <select id="icsTitleStyle" class="ics-months-select">
+                        <option value="full" selected>Volledig</option>
+                        <option value="day">Alleen cyclusdag</option>
+                        <option value="neutral">Neutraal</option>
+                    </select>
+                </div>
+                <div class="ics-include-options">
+                    <span class="ics-include-label">Opnemen in agenda-item:</span>
+                    <label class="ics-include-check"><input type="checkbox" id="icsIncludeKenmerken"> Kenmerken</label>
+                    <label class="ics-include-check"><input type="checkbox" id="icsIncludeGeneriek"> Generieke symptomen</label>
+                    <label class="ics-include-check"><input type="checkbox" id="icsIncludeEigen"> Jouw symptomen</label>
+                    <label class="ics-include-check"><input type="checkbox" id="icsIncludeActiviteiten"> Activiteiten &amp; tips</label>
+                </div>
+                <div class="ics-preview">
+                    <div class="ics-preview-header" id="icsPreviewHeader">Late luteale fase (dag 23)</div>
+                    <div class="ics-preview-body" id="icsPreviewBody">
+                        <div class="ics-preview-syms" id="icsPreviewFase" style="display:none">Late luteale fase (dag 23)</div>
+                        <div class="ics-preview-syms" id="icsPreviewKenmerken" style="display:none"><strong>Kenmerken:</strong> Energie en stemming dalen. Gebruik deze tijd voor afronden en opruimen, niet voor opstarten. Houd sociale afspraken klein en vertrouwd.</div>
+                        <div class="ics-preview-syms" id="icsPreviewGeneriek" style="display:none"><strong>Generieke symptomen:</strong> Stemmingswisselingen · Prikkelbaarheid · Angst · Somberheid · Onzekerheid</div>
+                        <div class="ics-preview-syms" id="icsPreviewEigen" style="display:none"><strong>Jouw symptomen:</strong> <em id="icsPreviewEigenText">jouw meest gelogde klachten voor deze fase</em></div>
+                        <div class="ics-score-rows" id="icsPreviewActiviteiten" style="display:none">
+                            <div class="ics-score-row">
+                                <span class="ics-score-label">Sport</span>
+                                <span class="ics-score-dots">
+                                    <span class="ics-dot on"></span><span class="ics-dot on"></span><span class="ics-dot"></span><span class="ics-dot"></span><span class="ics-dot"></span>
+                                </span>
+                                <span class="ics-score-tip">Wandelen, yoga, stretching.</span>
+                            </div>
+                            <div class="ics-score-row">
+                                <span class="ics-score-label">Sociaal</span>
+                                <span class="ics-score-dots">
+                                    <span class="ics-dot on"></span><span class="ics-dot on"></span><span class="ics-dot"></span><span class="ics-dot"></span><span class="ics-dot"></span>
+                                </span>
+                                <span class="ics-score-tip">Kleine, vertrouwde kring. Grote verplichtingen vermijden.</span>
+                            </div>
+                            <div class="ics-score-row">
+                                <span class="ics-score-label">Zelfvertrouwen</span>
+                                <span class="ics-score-dots">
+                                    <span class="ics-dot on"></span><span class="ics-dot on"></span><span class="ics-dot"></span><span class="ics-dot"></span><span class="ics-dot"></span>
+                                </span>
+                                <span class="ics-score-tip">Zelfkritiek en piekeren zijn hormoongestuurd. Neem ze niet serieus.</span>
+                            </div>
+                            <div class="ics-score-row">
+                                <span class="ics-score-label">Denkvermogen</span>
+                                <span class="ics-score-dots">
+                                    <span class="ics-dot on"></span><span class="ics-dot on"></span><span class="ics-dot"></span><span class="ics-dot"></span><span class="ics-dot"></span>
+                                </span>
+                                <span class="ics-score-tip">Concentratie en focus nemen af. Routinetaken, opruimen en afronden.</span>
+                            </div>
+                        </div>
+                        <div class="ics-preview-empty" id="icsPreviewEmpty">Geen beschrijving</div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-io" id="exportIcsBtn">↓ Exporteer kalender (ICS)</button>
+            <p class="cal-export-desc cal-export-after">
+                Importeer het .ics-bestand in je eigen kalender-app, meestal via een optie als <em>Importeren</em> bij je agenda-instellingen.
+            </p>
+            <div class="cal-tip">
+                <span class="cal-tip-icon">💡</span>
+                <p><strong>Tip:</strong> je kunt dit bestand ook delen met je significant other(s), huisgenoot, of die ene vriend die jou (on)terecht beschuldigt van moodswings maar nooit eens chocola meebrengt, zodat zij beter rekening met je kunnen houden.</p>
+            </div>
+            <a class="cal-export-more-link cal-export-less-link" id="calExportLessLink">Toon minder</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- gegevens & backup -->
+    <div class="log-section">
+        <div class="log-section-header" style="cursor:pointer" data-section="backupBody">
+            <span><span class="log-sec-arrow">▼</span> Gegevens &amp; backup</span>
+        </div>
+        <div class="log-section-body" id="backupBody">
+            <div class="backup-reminder" id="backupReminder" style="display:none">
+                <span class="backup-reminder-text" id="backupReminderText"></span>
+                <div class="backup-reminder-snooze">
+                    <span>Niet herinneren voor</span>
+                    <input type="number" id="backupSnoozeDays" class="backup-snooze-input" min="1" max="365" value="5">
+                    <span>dagen</span>
+                    <button class="btn-io-outline backup-snooze-btn" id="backupSnoozeBtn">OK</button>
+                </div>
+            </div>
+            <div class="history-intro">
+                <p>Jouw data is van jou, wij slaan niets op een server op. Alle logs en je cyclusinstellingen staan alleen in de local storage van deze browser. Als je de browserdata of cache van deze site leegt, ben je ze kwijt. Maak daarom regelmatig een backup. De export bevat je symptoomlogs én de opgegeven menstruatiedatums (waaruit de cycluslengte volgt). Je kunt het later gewoon weer importeren.</p>
+                <div class="history-io-row">
+                    <label class="btn-io-outline history-import-btn" style="cursor:pointer">
+                        ↑ Importeer backup
+                        <input type="file" id="importFile" accept=".json" style="display:none">
+                    </label>
+                    <button class="btn-io-outline" id="exportBtn">↓ Exporteer backup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/storage-api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/cycle.js"></script>
+    <script src="js/sym-settings.js"></script>
+    <script src="js/log.js"></script>
+    <script src="js/phase.js"></script>
+    <script src="js/ics.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

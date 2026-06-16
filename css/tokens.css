@@ -1,0 +1,108 @@
+/* ═══════════════════════════════════════════════
+   Cyclus Tracker: shared stylesheet
+   Light mode = default  |  Dark mode via class or prefers-color-scheme
+   ═══════════════════════════════════════════════ */
+
+/* ── theme tokens ──────────────────────────────── */
+:root {
+  --bg:              #f5eef7;
+  --bg-card:         #ffffff;
+  --bg-subtle:       #fdf4f7;
+  --bg-info:         #fde8ef;
+  --bg-tag:          #ede0f0;
+  --bg-history-hd:   #f8f2fc;
+  --bg-phase-info:   #f0ebe6;
+
+  --text:            #333333;
+  --text-muted:      #555555;
+  --text-faint:      #888888;
+  --text-tag:        #5a3388;
+  --text-phase-info: #666666;
+  --text-on-page:    #5c3a6a;
+
+  --border:          #ede0f0;
+  --border-input:    #cca0b0;
+  --border-subtle:   #dcc8d8;
+
+  --accent:          #b03060;
+  --accent-bg:       #fde8ef;
+  --accent-border:   #b03060;
+
+  --btn-log:         #9468b4;
+  --btn-log-hov:     #8058a4;
+  --btn-io:          #c88448;
+  --btn-io-hov:      #b07438;
+  --btn-other:       #888888;
+  --btn-other-hov:   #666666;
+
+  /* chart page */
+  --chart-body-bg:   #fdf8f5;
+  --chart-text:      #2c2c2a;
+  --chart-muted:     #888888;
+  --chart-grid:      rgba(0,0,0,0.06);
+  --chart-tick:      #aaaaaa;
+  --chart-border:    rgba(0,0,0,0.10);
+  --chart-info-bg:   #f0ebe6;
+  --chart-info-text: #666666;
+  --chart-marker:    #e74c3c;
+
+  --slider-track:    #dddddd;
+  --slider-thumb:    #2c2c2a;
+  --slider-thumb-b:  #fdf8f5;
+}
+
+/* dark mode via system preference */
+@media (prefers-color-scheme: dark) {
+  :root { --_dark: 1; }
+}
+
+/* dark mode via manual class (overrides system) */
+html.dark-mode,
+html.dark-mode :root {
+  --bg:              #181818;
+  --bg-card:         #1e1e1e;
+  --bg-subtle:       #232323;
+  --bg-info:         #261520;
+  --bg-tag:          #25203000;
+  --bg-history-hd:   #1c1424;
+  --bg-phase-info:   #1e1e1e;
+
+  --text:            #c4c4c4;
+  --text-muted:      #a0a0a0;
+  --text-faint:      #808080;
+  --text-tag:        #b090d8;
+  --text-phase-info: #999999;
+  --text-on-page:    var(--text-muted);
+
+  --border:          #272727;
+  --border-input:    #383838;
+  --border-subtle:   #2e2e2e;
+
+  --accent:          #c05888;
+  --accent-bg:       #221020;
+  --accent-border:   #c05888;
+
+  --btn-log:         #7a58a0;
+  --btn-log-hov:     #6a4890;
+  --btn-io:          #a87038;
+  --btn-io-hov:      #986028;
+  --btn-other:       #666666;
+  --btn-other-hov:   #555555;
+
+  --chart-body-bg:   #1a1a1a;
+  --chart-text:      #cccccc;
+  --chart-muted:     #909090;
+  --chart-grid:      rgba(255,255,255,0.05);
+  --chart-tick:      #888888;
+  --chart-border:    rgba(255,255,255,0.08);
+  --chart-info-bg:   #222222;
+  --chart-info-text: #a0a0a0;
+  --chart-marker:    #e74c3c;
+
+  --slider-track:    #333333;
+  --slider-thumb:    #888888;
+  --slider-thumb-b:  #111111;
+}
+
+/* ── base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }

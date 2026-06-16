@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menstruatiecyclus – hormoonspiegels</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/chart.css">
+</head>
+<body class="chart-page">
+
+<h1>Hormoonspiegels tijdens de menstruatiecyclus</h1>
+
+<div class="controls">
+  <div class="ctrl">
+    <label>Cycluslengte (dagen)</label>
+    <input type="range" min="21" max="35" value="28" id="cycleLen" step="1">
+    <span id="cycleLenOut">28</span>
+    <span></span>
+  </div>
+  <div class="ctrl">
+    <label>Dag van vandaag</label>
+    <input type="range" min="1" max="28" value="1" id="today" step="1">
+    <span id="todayOut">dag 1</span>
+    <button class="reset-btn" id="resetBtn" onclick="resetToParentDay()">↺ reset</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="swatch" style="background:#7ab55c;"></div>FSH</div>
+  <div class="legend-item"><div class="swatch" style="background:#e87ab0;"></div>LH</div>
+  <div class="legend-item"><div class="swatch" style="background:#f2d232;"></div>Oestradiol</div>
+  <div class="legend-item"><div class="swatch" style="background:#4db8c8;"></div>Progesteron</div>
+</div>
+
+<div class="chart-wrap" id="chartWrap">
+  <canvas id="horChart" role="img" aria-label="Hormoonspiegels per dag van de menstruatiecyclus"></canvas>
+  <div class="day-marker" id="dayMarker">
+    <div class="day-marker-label" id="dayLabel">dag 1</div>
+  </div>
+</div>
+
+<div id="phasesRow" class="phases-row"></div>
+<div id="phaseInfo" class="phase-info"></div>
+
+<script>
+function gauss(x, mu, sigma, amp) {
+  return amp * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+}
+function sigmoid(x, center, steepness) {
+  return 1 / (1 + Math.exp(-steepness * (x - center)));
+}
+
+function generateData(cycleLen) {
+  const ov = Math.round(cycleLen * 0.46);
+  const labels = [], lh = [], fsh = [], estro = [], prog = [];
+  for (let d = 1; d <= cycleLen; d++) {
+    labels.push(d);
+    fsh.push(Math.max(0.04, 0.15 + gauss(d, 3.5, 2.2, 0.18) + gauss(d, ov, 0.65, 0.52) + 0.14 * sigmoid(d, cycleLen - 3, 0.8)));
+    lh.push(0.07 + gauss(d, ov, 0.65, 1.0));
+    const ovPeak = ov - 1;
+    const estroPre = d <= ovPeak
+      ? 0.95 * Math.pow((d - 1) / (ovPeak - 1), 2.2)
+      : 0.95 * Math.exp(-0.28 * Math.pow(d - ovPeak, 2));
+    const progPeak = cycleLen - 7;
+    const estroLut = gauss(d, progPeak, cycleLen * 0.12, 0.44);
+    estro.push(Math.max(0.04, estroPre + estroLut + 0.03));
+    const p = gauss(d, progPeak, cycleLen * 0.115, 0.95);
+    prog.push(d < ov ? Math.min(p, 0.04) : Math.max(0.03, p));
+  }
+  return { labels, lh, fsh, estro, prog };
+}
+
+function getPhases(cycleLen) {
+  const ov = Math.round(cycleLen * 0.46);
+  return [
+    { name: 'Menstruatie',              start: 1,      end: 5,        color: '#D96B8A' },
+    { name: 'Folliculaire fase',        start: 6,      end: ov - 2,   color: '#5aaa70' },
+    { name: 'Ovulatie',                 start: ov - 1, end: ov + 1,   color: '#F0A000' },
+    { name: 'Luteale fase (vroeg)',     start: ov + 2, end: ov + 8,   color: '#3A80C0' },
+    { name: 'Luteale fase (laat)',      start: ov + 9, end: cycleLen, color: '#1E5A96' },
+  ];
+}
+
+const descs = {
+  'Menstruatie':           'Baarmoederslijmvlies wordt afgestoten. FSH stijgt, bereikt piek en daalt. LH, Oestradiol en Progesteron zeer laag.',
+  'Folliculaire fase':     'Follikels rijpen onder invloed van FSH. FSH daalt. Oestradiol stijgt geleidelijk. LH en Progesteron laag.',
+  'Ovulatie':              'LH bereikt zeer hoge piek en triggert eisprong. Oestradiol bereikt piek. FSH blijft verhoogd. Progesteron zeer laag.',
+  'Luteale fase (vroeg)':  'Corpus luteum vormt en produceert progesteron dat sterk stijgt. Oestradiol daalt. FSH en LH laag.',
+  'Luteale fase (laat)':   'Progesteron bereikt piek en daalt. Oestradiol bereikt tweede, lagere piek en daalt. FSH en LH laag.',
+};
+
+let cycleLen = 28, todayDay = 1, parentDay = null, sliderMoved = false, chart;
+const canvas    = document.getElementById('horChart');
+const wrapper   = document.getElementById('chartWrap');
+const dayMarker = document.getElementById('dayMarker');
+const dayLabelEl = document.getElementById('dayLabel');
+const phasesRow  = document.getElementById('phasesRow');
+const phaseInfo  = document.getElementById('phaseInfo');
+
+function chartColors() {
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    grid:   cs.getPropertyValue('--chart-grid').trim()   || 'rgba(255,255,255,0.05)',
+    tick:   cs.getPropertyValue('--chart-tick').trim()   || '#555',
+    border: cs.getPropertyValue('--chart-border').trim() || 'rgba(255,255,255,0.08)',
+  };
+}
+
+function makeChart(data) {
+  if (chart) chart.destroy();
+  const c = chartColors();
+  chart = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [
+        { label: 'FSH',         data: data.fsh,   borderColor: '#7ab55c', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 },
+        { label: 'LH',          data: data.lh,    borderColor: '#e87ab0', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 },
+        { label: 'Oestradiol',  data: data.estro, borderColor: '#e8d060', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 },
+        { label: 'Progesteron', data: data.prog,  borderColor: '#4db8c8', borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => `Dag ${items[0].label}`,
+            label: () => null
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: c.tick,
+            autoSkip: false,
+            maxRotation: 0,
+            font: { size: 11 },
+            callback: (val, i) => {
+              const d = i + 1;
+              if ([1, 3, 6, 9, 12, 15, 18, 21, 24, 27].includes(d) || d === cycleLen) return d;
+              return '';
+            }
+          },
+          grid: { color: c.grid },
+          border: { color: c.border }
+        },
+        y: { display: false, min: 0, max: 1.15 }
+      }
+    }
+  });
+}
+
+function buildPhasesRow() {
+  phasesRow.innerHTML = '';
+  getPhases(cycleLen).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'phase-seg';
+    div.style.width = ((p.end - p.start + 1) / cycleLen * 100).toFixed(2) + '%';
+    div.style.borderColor = p.color;
+    div.style.color = p.color;
+    div.style.background = p.color + '22';
+    div.textContent = p.name;
+    phasesRow.appendChild(div);
+  });
+}
+
+function positionMarker() {
+  if (!chart || !chart.chartArea) return;
+  const ca = chart.chartArea;
+  const wr = wrapper.getBoundingClientRect();
+  const frac = (todayDay - 0.5) / cycleLen;
+  const px = ca.left - wr.left + frac * (ca.right - ca.left);
+  dayMarker.style.left   = px + 'px';
+  dayMarker.style.top    = ca.top + 'px';
+  dayMarker.style.height = (ca.bottom - ca.top) + 'px';
+  dayLabelEl.textContent = 'dag ' + todayDay;
+}
+
+function updateInfo() {
+  const phase = getPhases(cycleLen).find(p => todayDay >= p.start && todayDay <= p.end) || {};
+  phaseInfo.innerHTML = `<strong style="color:${phase.color}">${phase.name} (dag ${todayDay})</strong>: ${descs[phase.name] || ''}`;
+}
+
+function update() {
+  makeChart(generateData(cycleLen));
+  buildPhasesRow();
+  updateInfo();
+  setTimeout(positionMarker, 60);
+}
+
+function resetToParentDay() {
+  if (parentDay === null) return;
+  sliderMoved = false;
+  todayDay = parentDay;
+  document.getElementById('today').value = todayDay;
+  document.getElementById('todayOut').textContent = 'dag ' + todayDay;
+  positionMarker();
+  updateInfo();
+  document.getElementById('resetBtn').classList.remove('visible');
+  window.parent.postMessage({ type: 'dayChanged', day: todayDay }, '*');
+}
+
+document.getElementById('cycleLen').addEventListener('input', e => {
+  cycleLen = parseInt(e.target.value);
+  document.getElementById('cycleLenOut').textContent = cycleLen;
+  document.getElementById('today').max = cycleLen;
+  if (todayDay > cycleLen) { todayDay = cycleLen; document.getElementById('today').value = cycleLen; }
+  document.getElementById('todayOut').textContent = 'dag ' + todayDay;
+  update();
+  window.parent.postMessage({ type: 'cycleLenChanged', cycleLen, day: todayDay }, '*');
+});
+
+document.getElementById('today').addEventListener('input', e => {
+  todayDay = parseInt(e.target.value);
+  document.getElementById('todayOut').textContent = 'dag ' + todayDay;
+  positionMarker();
+  updateInfo();
+  window.parent.postMessage({ type: 'dayChanged', day: todayDay }, '*');
+  if (parentDay !== null) {
+    sliderMoved = true;
+    document.getElementById('resetBtn').classList.add('visible');
+  }
+});
+
+window.addEventListener('resize', positionMarker);
+
+/* ── draggable day marker ── */
+let _markerDragging = false;
+
+function applyDayFromClientX(clientX) {
+  if (!chart || !chart.chartArea) return;
+  const ca   = chart.chartArea;
+  const frac = Math.max(0, Math.min(1, (clientX - ca.left) / (ca.right - ca.left)));
+  const newDay = Math.max(1, Math.min(cycleLen, Math.floor(frac * cycleLen) + 1));
+  if (newDay === todayDay) return;
+  todayDay = newDay;
+  document.getElementById('today').value = newDay;
+  document.getElementById('todayOut').textContent = 'dag ' + newDay;
+  positionMarker();
+  updateInfo();
+  window.parent.postMessage({ type: 'dayChanged', day: newDay }, '*');
+  if (parentDay !== null) {
+    sliderMoved = true;
+    document.getElementById('resetBtn').classList.toggle('visible', newDay !== parentDay);
+  }
+}
+
+function applyDay(newDay) {
+  newDay = Math.max(1, Math.min(cycleLen, newDay));
+  if (newDay === todayDay) return;
+  todayDay = newDay;
+  document.getElementById('today').value = newDay;
+  document.getElementById('todayOut').textContent = 'dag ' + newDay;
+  positionMarker();
+  updateInfo();
+  window.parent.postMessage({ type: 'dayChanged', day: newDay }, '*');
+  if (parentDay !== null) {
+    sliderMoved = true;
+    document.getElementById('resetBtn').classList.toggle('visible', newDay !== parentDay);
+  }
+}
+
+canvas.addEventListener('click', e => applyDayFromClientX(e.clientX));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); applyDay(todayDay + 1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); applyDay(todayDay - 1); }
+});
+
+dayMarker.addEventListener('mousedown', e => { _markerDragging = true; dayMarker.classList.add('dragging'); e.preventDefault(); });
+document.addEventListener('mousemove',  e => { if (_markerDragging) applyDayFromClientX(e.clientX); });
+document.addEventListener('mouseup',    () => { if (_markerDragging) { _markerDragging = false; dayMarker.classList.remove('dragging'); } });
+
+dayMarker.addEventListener('touchstart', e => { _markerDragging = true; dayMarker.classList.add('dragging'); e.preventDefault(); }, { passive: false });
+document.addEventListener('touchmove',   e => { if (_markerDragging) { applyDayFromClientX(e.touches[0].clientX); e.preventDefault(); } }, { passive: false });
+document.addEventListener('touchend',    () => { if (_markerDragging) { _markerDragging = false; dayMarker.classList.remove('dragging'); } });
+
+update();
+
+/* ── postMessage API ── */
+window.addEventListener('message', e => {
+  if (!e.data) return;
+
+  if (e.data.type === 'theme') {
+    document.documentElement.classList.toggle('dark-mode', e.data.dark);
+    document.documentElement.classList.toggle('light-mode', !e.data.dark);
+    update(); // rebuild chart with new colors
+    return;
+  }
+
+  if (e.data.type === 'cyclusDay') {
+    document.body.classList.add('embedded');
+    const newLen = parseInt(e.data.cycleLen) || cycleLen;
+    if (newLen !== cycleLen) {
+      cycleLen = newLen;
+      document.getElementById('cycleLen').value = cycleLen;
+      document.getElementById('cycleLenOut').textContent = cycleLen;
+      document.getElementById('today').max = cycleLen;
+      update();
+    }
+    const d = Math.max(1, Math.min(parseInt(e.data.day) || 1, cycleLen));
+    parentDay = d;
+    todayDay  = d;
+    sliderMoved = false;
+    document.getElementById('today').value = d;
+    document.getElementById('todayOut').textContent = 'dag ' + d;
+    document.getElementById('resetBtn').classList.remove('visible');
+    positionMarker();
+    updateInfo();
+  }
+});
+</script>
+</body>
+</html>
