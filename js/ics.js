@@ -14,7 +14,7 @@ function exportICS() {
     }
 
     const icsCycleLen = Math.max(21, Math.min(45, parseInt(document.getElementById('icsCycleLen').value, 10) || 28));
-    const { y: sy, m: sm, d: sd } = parseISODate(startVal);
+    const [sy, sm, sd] = startVal.split('-').map(Number);
     const cycleStart = new Date(sy, sm - 1, sd);
 
     const today = new Date();
@@ -45,7 +45,7 @@ function exportICS() {
     const events = [];
     const cursor = new Date(today);
     while (cursor <= rangeEnd) {
-        const rawDay = Math.round((cursor - cycleStart) / MS_PER_DAY) + 1;
+        const rawDay = Math.round((cursor - cycleStart) / 86400000) + 1;
         if (rawDay >= 1) {
             const cycleDay = ((rawDay - 1) % icsCycleLen) + 1;
             const phase = phaseForDay(cycleDay, icsCycleLen);

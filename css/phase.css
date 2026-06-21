@@ -8,10 +8,7 @@
   overflow: hidden;
   box-shadow: 0 2px 16px rgba(0,0,0,0.10);
 }
-#phase-panel.visible {
-  display: block;
-}
-.phase-header { padding: 16px 22px; color: #fff; background: var(--phase-color, #666); }
+.phase-header { padding: 16px 22px; color: #fff; }
 .phase-header h2 { margin: 0; font-size: 1.3em; }
 .phase-header .phase-days { font-size: 0.88em; opacity: 0.85; margin-top: 2px; }
 .phase-body {
@@ -32,14 +29,10 @@
   padding: 14px 16px;
 }
 #activity-panel {
-  display: none;
   margin-top: 16px;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 16px rgba(0,0,0,0.10);
-}
-#activity-panel.visible {
-  display: block;
 }
 .activity-header {
   padding: 13px 22px;
@@ -48,7 +41,6 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: var(--phase-color, #666);
 }
 .activity-body {
   background: var(--bg-card);

@@ -218,26 +218,16 @@ function renderPhaseTips(phase) {
     el.innerHTML = html;
 }
 
-function updatePhasePanels(phase) {
-    document.documentElement.style.setProperty('--phase-color', phase.color);
-    const panelUpdates = {
-        'phase-name': { textContent: phase.name },
-        'phase-days': { textContent: phase.days },
-        'phase-desc': { textContent: phase.description },
-        'phase-insights': { innerHTML: renderInsights(phase) },
-        'hormone-rows': { innerHTML: renderHormones(phase.hormones) },
-    };
-    Object.entries(panelUpdates).forEach(([id, updates]) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        Object.entries(updates).forEach(([prop, val]) => el[prop] = val);
-    });
-}
-
 function showPhase(phase) {
-    document.getElementById('phase-panel').classList.add('visible');
-    document.getElementById('activity-panel').classList.add('visible');
-    updatePhasePanels(phase);
+    document.getElementById('phase-panel').style.display = 'block';
+    document.getElementById('activity-panel').style.display = 'block';
+    document.getElementById('phase-header').style.background   = phase.color;
+    document.getElementById('activity-header').style.background = phase.color;
+    document.getElementById('phase-name').textContent  = phase.name;
+    document.getElementById('phase-days').textContent  = phase.days;
+    document.getElementById('phase-desc').textContent  = phase.description;
+    document.getElementById('phase-insights').innerHTML = renderInsights(phase);
+    document.getElementById('hormone-rows').innerHTML  = renderHormones(phase.hormones);
     renderPhaseSymContainer(phase);
     renderPhaseSymCompare(phase);
     renderPhaseTips(phase);
@@ -245,7 +235,7 @@ function showPhase(phase) {
 }
 
 function hidePhase() {
-    document.getElementById('phase-panel').classList.remove('visible');
-    document.getElementById('activity-panel').classList.remove('visible');
+    document.getElementById('phase-panel').style.display = 'none';
+    document.getElementById('activity-panel').style.display = 'none';
     if (currentPhase !== null) { currentPhase = null; buildSymGrid(); }
 }

@@ -17,7 +17,7 @@
 <body class="app-page">
     <div class="app-topbar">
         <h1 class="app-title">Cyclus Tracker</h1>
-        <button class="theme-btn" id="themeBtn" title="Schakel thema">☀</button>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Schakel thema">☀</button>
     </div>
 
     <div class="controls">
@@ -28,14 +28,14 @@
     </div>
 
     <div class="cycle-setup" id="cycleSetup">
-        <button class="cycle-setup-title" id="cycleSetupBtn">
+        <button class="cycle-setup-title" onclick="toggleCycleSetup()">
             <span class="cycle-setup-arrow">▶</span> Cycluslengte bepalen
             <span class="cycle-setup-summary" id="cycleSetupSummary"></span>
         </button>
         <div class="cycle-setup-body" id="cycleSetupBody">
             <p class="cycle-setup-desc">Voer de eerste dag van opeenvolgende menstruaties in. De volgorde maakt niet uit, we sorteren ze zelf. Hoe meer datums, hoe nauwkeuriger het gemiddelde. De meest recente datum wordt automatisch als startpunt ingesteld.</p>
             <div class="cycle-date-list" id="cycleDateList"></div>
-            <button class="btn-add-date" id="addCycleDateBtn">+ Datum toevoegen</button>
+            <button class="btn-add-date" onclick="addCycleDate()">+ Datum toevoegen</button>
             <div class="cycle-calc-result" id="cycleCalcResult"></div>
         </div>
     </div>
@@ -61,8 +61,8 @@
                 <div class="phase-sym-titlerow">
                     <p class="section-title">Symptomen in deze fase</p>
                     <div class="phase-sym-toggle">
-                        <button class="pst-btn active" data-tab="typical">Typisch</button>
-                        <button class="pst-btn" data-tab="user">Jij</button>
+                        <button class="pst-btn active" data-tab="typical" onclick="switchPhaseSymTab('typical')">Typisch</button>
+                        <button class="pst-btn" data-tab="user" onclick="switchPhaseSymTab('user')">Jij</button>
                     </div>
                 </div>
                 <div id="phase-sym-container"></div>
@@ -98,11 +98,11 @@
             </div>
 
             <div class="log-accordion">
-                <button class="log-acc-hd" data-acc="accKlachten">
+                <button class="log-acc-hd" onclick="toggleAcc('accKlachten', this)">
                     <span class="log-acc-arrow">▼</span>
                     <span class="log-acc-title">Symptomen</span>
                     <span class="log-acc-summary" id="accSumKlachten"></span>
-                    <span class="log-acc-action sym-settings-btn" id="symSettingsBtn" title="Symptomen aanpassen">⚙</span>
+                    <span class="log-acc-action sym-settings-btn" id="symSettingsBtn" onclick="event.stopPropagation(); toggleSymSettings()" title="Symptomen aanpassen">⚙</span>
                 </button>
                 <div class="log-acc-body open" id="accKlachten">
                     <div class="sym-settings-panel" id="symSettingsPanel">
@@ -115,17 +115,17 @@
                             <div class="sym-col-wrap">
                                 <div class="sym-dropzone" id="shownFysiekZone"></div>
                                 <div class="sym-col-add-row" id="addFysiekRow">
-                                    <button class="sym-col-plus" data-action="toggleAddSym" data-category="Fysiek" title="Eigen symptoom toevoegen">+</button>
+                                    <button class="sym-col-plus" onclick="toggleAddSym('Fysiek')" title="Eigen symptoom toevoegen">+</button>
                                     <input type="text" class="sym-col-add-input" id="addFysiekInput" placeholder="Naam…">
-                                    <button class="sym-col-add-ok btn-anders" data-action="commitAddSym" data-category="Fysiek">+</button>
+                                    <button class="sym-col-add-ok btn-anders" onclick="commitAddSym('Fysiek')">+</button>
                                 </div>
                             </div>
                             <div class="sym-col-wrap">
                                 <div class="sym-dropzone" id="shownMentaalZone"></div>
                                 <div class="sym-col-add-row" id="addMentaalRow">
-                                    <button class="sym-col-plus" data-action="toggleAddSym" data-category="Mentaal &amp; emotioneel" title="Eigen symptoom toevoegen">+</button>
+                                    <button class="sym-col-plus" onclick="toggleAddSym('Mentaal &amp; emotioneel')" title="Eigen symptoom toevoegen">+</button>
                                     <input type="text" class="sym-col-add-input" id="addMentaalInput" placeholder="Naam…">
-                                    <button class="sym-col-add-ok btn-anders" data-action="commitAddSym" data-category="Mentaal &amp; emotioneel">+</button>
+                                    <button class="sym-col-add-ok btn-anders" onclick="commitAddSym('Mentaal &amp; emotioneel')">+</button>
                                 </div>
                             </div>
 
@@ -139,7 +139,7 @@
             </div>
 
             <div class="log-accordion">
-                <button class="log-acc-hd" data-acc="accWerkt">
+                <button class="log-acc-hd" onclick="toggleAcc('accWerkt', this)">
                     <span class="log-acc-arrow">▶</span>
                     <span class="log-acc-title">Activiteiten &amp; tips</span>
                     <span class="log-acc-summary" id="accSumWerkt"></span>
@@ -147,19 +147,19 @@
                 <div class="log-acc-body" id="accWerkt">
                     <div class="works-fields">
                         <div class="works-grid-section">
-                            <div class="works-grid-hd works-pos"><span>Wat werkte voor je vandaag?</span><button class="works-edit-btn" id="worksWellEditBtn" data-action="toggleTipsEdit" data-type="well">Bewerk</button></div>
+                            <div class="works-grid-hd works-pos"><span>Wat werkte voor je vandaag?</span><button class="works-edit-btn" id="worksWellEditBtn" onclick="toggleTipsEdit('well')">Bewerk</button></div>
                             <div class="works-checkgrid" id="worksWellGrid"></div>
                             <div class="works-add-row">
                                 <input type="text" class="works-add-input" id="worksWellInput" placeholder="Toevoegen…">
-                                <button class="btn-anders" data-action="addTipItem" data-type="well">+</button>
+                                <button class="btn-anders" onclick="addTipItem('well')">+</button>
                             </div>
                         </div>
                         <div class="works-grid-section">
-                            <div class="works-grid-hd works-neg"><span>Wat werkte tegen je vandaag?</span><button class="works-edit-btn" id="worksNotEditBtn" data-action="toggleTipsEdit" data-type="not">Bewerk</button></div>
+                            <div class="works-grid-hd works-neg"><span>Wat werkte tegen je vandaag?</span><button class="works-edit-btn" id="worksNotEditBtn" onclick="toggleTipsEdit('not')">Bewerk</button></div>
                             <div class="works-checkgrid" id="worksNotGrid"></div>
                             <div class="works-add-row">
                                 <input type="text" class="works-add-input" id="worksNotInput" placeholder="Toevoegen…">
-                                <button class="btn-anders" data-action="addTipItem" data-type="not">+</button>
+                                <button class="btn-anders" onclick="addTipItem('not')">+</button>
                             </div>
                         </div>
                     </div>
@@ -167,7 +167,7 @@
             </div>
 
             <div class="log-accordion">
-                <button class="log-acc-hd" data-acc="accNotities">
+                <button class="log-acc-hd" onclick="toggleAcc('accNotities', this)">
                     <span class="log-acc-arrow">▶</span>
                     <span class="log-acc-title">Notities</span>
                     <span class="log-acc-summary" id="accSumNotities"></span>
@@ -178,14 +178,14 @@
             </div>
 
             <div class="log-save-row">
-                <p class="log-cycleday-hint" id="cycleDayHint" style="display:none">Stel een <a href="#startDate" id="focusStartDateLink">startdatum</a> in om de cyclus dag automatisch op te slaan.</p>
+                <p class="log-cycleday-hint" id="cycleDayHint" style="display:none">Stel een <a href="#startDate" onclick="document.getElementById('startDate').focus()">startdatum</a> in om de cyclus dag automatisch op te slaan.</p>
                 <button class="btn-save" id="saveLogBtn">Opslaan</button>
             </div>
 
             <div class="log-history-divider"></div>
 
             <div class="log-history-block">
-                <button class="history-toggle" id="historyToggleBtn">
+                <button class="history-toggle" onclick="toggleHistory(this)">
                     <span class="history-toggle-text">Geschiedenis tonen</span>
                     <span class="history-toggle-count" id="historyCount"></span>
                 </button>
@@ -198,7 +198,7 @@
 
     <!-- cyclus in je agenda blok -->
     <div class="log-section">
-        <div class="log-section-header" style="cursor:pointer" data-section="calExportBody">
+        <div class="log-section-header" style="cursor:pointer" onclick="toggleSection('calExportBody', this)">
             <span><span class="log-sec-arrow">▼</span> Plannen op het ritme van je cyclus</span>
         </div>
         <div class="cal-export-body" id="calExportBody">
@@ -210,7 +210,7 @@
             <p class="cal-export-desc">
                 Je krijgt één all-day event per dag, met per fase de kenmerken en symptomen die je zelf kiest.
                 Generieke symptomen zijn gebaseerd op gemiddelde waarden per fase voor de meeste vrouwen; eigen symptomen komen uit jouw eigen gelogde klachten per fase.
-                <a class="cal-export-more-link" id="calExportMoreLink">Toon meer…</a>
+                <a class="cal-export-more-link" id="calExportMoreLink" onclick="toggleCalExportMore()">Toon meer…</a>
             </p>
             <div class="cal-export-more" id="calExportMore" style="display:none">
             <div class="ics-params">
@@ -304,14 +304,14 @@
                 <span class="cal-tip-icon">💡</span>
                 <p><strong>Tip:</strong> je kunt dit bestand ook delen met je significant other(s), huisgenoot, of die ene vriend die jou (on)terecht beschuldigt van moodswings maar nooit eens chocola meebrengt, zodat zij beter rekening met je kunnen houden.</p>
             </div>
-            <a class="cal-export-more-link cal-export-less-link" id="calExportLessLink">Toon minder</a>
+            <a class="cal-export-more-link cal-export-less-link" onclick="toggleCalExportMore()">Toon minder</a>
             </div>
         </div>
     </div>
 
     <!-- gegevens & backup -->
     <div class="log-section">
-        <div class="log-section-header" style="cursor:pointer" data-section="backupBody">
+        <div class="log-section-header" style="cursor:pointer" onclick="toggleSection('backupBody', this)">
             <span><span class="log-sec-arrow">▼</span> Gegevens &amp; backup</span>
         </div>
         <div class="log-section-body" id="backupBody">
@@ -337,9 +337,7 @@
         </div>
     </div>
 
-    <script src="js/utils.js"></script>
     <script src="js/data.js"></script>
-    <script src="js/storage-api.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/cycle.js"></script>
     <script src="js/sym-settings.js"></script>

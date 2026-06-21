@@ -28,9 +28,9 @@ function phaseForDay(day, cycleLen) {
 function cycleDayForDate(dateStr) {
     const startVal = document.getElementById('startDate').value;
     if (!startVal) return 0;
-    const { y: sy, m: sm, d: sd } = parseISODate(startVal);
-    const { y: ty, m: tm, d: td } = parseISODate(dateStr);
-    return Math.round((new Date(ty, tm - 1, td) - new Date(sy, sm - 1, sd)) / MS_PER_DAY) + 1;
+    const [sy, sm, sd] = startVal.split('-').map(Number);
+    const [ty, tm, td] = dateStr.split('-').map(Number);
+    return Math.round((new Date(ty, tm - 1, td) - new Date(sy, sm - 1, sd)) / 86400000) + 1;
 }
 
 /* ─── dynamic hormone levels ──────────────────────────────── */
@@ -99,39 +99,49 @@ function renderHormones(hormones) {
         </div>`).join('');
 }
 
-function getLogsForPhase(phaseName) {
+function computePhaseSymFreq(phaseName) {
     const startVal = document.getElementById('startDate').value;
-    if (!startVal) return [];
-    const logs = [];
+    if (!startVal) return null;
+    const freq = {};
     Object.entries(loadLogs()).forEach(([date, entry]) => {
         const rawDay = cycleDayForDate(date);
         if (rawDay < 1 - avgCycleLen * 10) return;
-        const cycDay = normalizeCycleDay(rawDay, avgCycleLen);
+        const cycDay = (((rawDay - 1) % avgCycleLen) + avgCycleLen) % avgCycleLen + 1;
         const p = phaseForDay(cycDay);
         if (!p || p.name !== phaseName) return;
-        logs.push(entry);
-    });
-    return logs;
-}
-
-function computePhaseSymFreq(phaseName) {
-    const freq = {};
-    getLogsForPhase(phaseName).forEach(entry => {
         (entry.symptoms || []).forEach(s => {
             const name = typeof s === 'string' ? s : s.name;
             freq[name] = (freq[name] || 0) + 1;
         });
     });
-    return Object.keys(freq).length ? freq : null;
+    return freq;
 }
 
 function computePhaseLoggedDays(phaseName) {
-    return getLogsForPhase(phaseName).filter(e => (e.symptoms || []).length).length;
+    const startVal = document.getElementById('startDate').value;
+    if (!startVal) return 0;
+    let days = 0;
+    Object.entries(loadLogs()).forEach(([date, entry]) => {
+        const rawDay = cycleDayForDate(date);
+        if (rawDay < 1 - avgCycleLen * 10) return;
+        const cycDay = (((rawDay - 1) % avgCycleLen) + avgCycleLen) % avgCycleLen + 1;
+        const p = phaseForDay(cycDay);
+        if (!p || p.name !== phaseName) return;
+        if ((entry.symptoms || []).length) days++;
+    });
+    return days;
 }
 
 function computePhaseWorksHistory(phaseName) {
+    const startVal = document.getElementById('startDate').value;
+    if (!startVal) return null;
     const well = {}, not = {};
-    getLogsForPhase(phaseName).forEach(entry => {
+    Object.entries(loadLogs()).forEach(([date, entry]) => {
+        const rawDay = cycleDayForDate(date);
+        if (rawDay < 1 - avgCycleLen * 10) return;
+        const cycDay = (((rawDay - 1) % avgCycleLen) + avgCycleLen) % avgCycleLen + 1;
+        const p = phaseForDay(cycDay);
+        if (!p || p.name !== phaseName) return;
         tipArray(entry.worksWell).forEach(v => { well[v] = (well[v] || 0) + 1; });
         tipArray(entry.worksNot).forEach(v  => { not[v]  = (not[v]  || 0) + 1; });
     });

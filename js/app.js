@@ -1,4 +1,5 @@
 /* ─── cycle setup ──────────────────────────────────────── */
+const CYCLE_SETUP_KEY = 'cyclus_setup_v1';
 let cycleDates = ['', ''];
 
 function toggleCycleSetup() {
@@ -68,7 +69,7 @@ function flagCloseCycleDates() {
         let nearest = null;
         for (let j = 0; j < cycleDates.length; j++) {
             if (j === i || !cycleDates[j]) continue;
-            const gap = Math.abs(Math.round((new Date(val) - new Date(cycleDates[j])) / MS_PER_DAY));
+            const gap = Math.abs(Math.round((new Date(val) - new Date(cycleDates[j])) / 86400000));
             if (nearest === null || gap < nearest) nearest = gap;
         }
         if (nearest === null) return;
@@ -96,7 +97,7 @@ function updateInlineLengths() {
             if (j === i || !o || o >= val) return;
             if (prev === null || o > prev) prev = o;
         });
-        return prev ? Math.round((new Date(val) - new Date(prev)) / MS_PER_DAY) : null;
+        return prev ? Math.round((new Date(val) - new Date(prev)) / 86400000) : null;
     });
 
     const valid = gaps.filter(g => g !== null && g > 0);
@@ -147,7 +148,7 @@ function calcCycleLen() {
     }
     const intervals = [];
     for (let i = 1; i < filled.length; i++) {
-        intervals.push(Math.round((new Date(filled[i]) - new Date(filled[i - 1])) / MS_PER_DAY));
+        intervals.push(Math.round((new Date(filled[i]) - new Date(filled[i - 1])) / 86400000));
     }
     if (intervals.some(l => l < 15 || l > 60)) {
         el.textContent = 'Controleer de datums, de tussenliggende periode lijkt ongebruikelijk.';
@@ -158,7 +159,7 @@ function calcCycleLen() {
     el.textContent = `Gemiddeld ${avgCycleLen} dagen`;
     el.style.color = 'var(--text-muted)';
     summary.textContent = `${avgCycleLen} dagen`;
-    StorageAPI.setItem(STORAGE_KEYS.CYCLE_SETUP, { dates: filled });
+    localStorage.setItem(CYCLE_SETUP_KEY, JSON.stringify({ dates: filled }));
     const newStart = filled[filled.length - 1];
     document.getElementById('startDate').value = newStart;
     syncIcsParams(newStart, avgCycleLen);
@@ -179,7 +180,8 @@ const input = document.getElementById('startDate');
 const info  = document.getElementById('info');
 
 (function restoreCycleSetup() {
-    const s = StorageAPI.getItem(STORAGE_KEYS.CYCLE_SETUP);
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(CYCLE_SETUP_KEY)); } catch { s = null; }
     if (s) {
         if (Array.isArray(s.dates) && s.dates.length >= 2) {
             cycleDates = [...s.dates];
@@ -207,10 +209,10 @@ function update() {
         sendDayToFrame(1);
         hidePhase(); return;
     }
-    const { y: sy, m: sm, d: sd } = parseISODate(val);
+    const [sy, sm, sd] = val.split('-').map(Number);
     const start    = new Date(sy, sm - 1, sd);
     const today    = new Date(); today.setHours(0, 0, 0, 0);
-    const cycleDay = Math.round((today - start) / MS_PER_DAY) + 1;
+    const cycleDay = Math.round((today - start) / 86400000) + 1;
     const phase    = phaseForDay(cycleDay);
 
     sendDayToFrame(cycleDay);
@@ -280,12 +282,13 @@ function applyTheme(dark) {
 
 function toggleTheme() {
     const dark = !document.documentElement.classList.contains('dark-mode');
-    StorageAPI.setString(STORAGE_KEYS.THEME, dark ? 'dark' : 'light');
+    localStorage.setItem('cyclus_theme', dark ? 'dark' : 'light');
     applyTheme(dark);
 }
 
+// restore saved theme on load
 (function () {
-    const saved = StorageAPI.getString(STORAGE_KEYS.THEME);
+    const saved = localStorage.getItem('cyclus_theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = saved ? saved === 'dark' : prefersDark;
     applyTheme(dark);
@@ -314,61 +317,3 @@ document.getElementById('cyclusFrame').addEventListener('load', () => {
     }
     if (input.value) update();
 });
-
-/* ─── event listeners ──────────────────────────────────────── */
-document.getElementById('themeBtn').addEventListener('click', toggleTheme);
-document.getElementById('cycleSetupBtn').addEventListener('click', toggleCycleSetup);
-document.getElementById('addCycleDateBtn').addEventListener('click', addCycleDate);
-
-document.querySelectorAll('.pst-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => switchPhaseSymTab(e.currentTarget.dataset.tab));
-});
-
-document.querySelectorAll('[data-acc]').forEach(btn => {
-    btn.addEventListener('click', (e) => toggleAcc(e.currentTarget.dataset.acc, e.currentTarget));
-});
-
-document.getElementById('symSettingsBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleSymSettings();
-});
-
-document.querySelectorAll('[data-action="toggleAddSym"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const cat = e.currentTarget.dataset.category.replace('&amp;', '&');
-        toggleAddSym(cat);
-    });
-});
-
-document.querySelectorAll('[data-action="commitAddSym"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        const cat = e.currentTarget.dataset.category.replace('&amp;', '&');
-        commitAddSym(cat);
-    });
-});
-
-document.querySelectorAll('[data-action="toggleTipsEdit"]').forEach(btn => {
-    btn.addEventListener('click', (e) => toggleTipsEdit(e.currentTarget.dataset.type));
-});
-
-document.querySelectorAll('[data-action="addTipItem"]').forEach(btn => {
-    btn.addEventListener('click', (e) => addTipItem(e.currentTarget.dataset.type));
-});
-
-document.getElementById('focusStartDateLink').addEventListener('click', (e) => {
-    e.preventDefault();
-    document.getElementById('startDate').focus();
-});
-
-document.getElementById('historyToggleBtn').addEventListener('click', (e) => {
-    toggleHistory(e.currentTarget);
-});
-
-document.querySelectorAll('[data-section]').forEach(el => {
-    el.addEventListener('click', (e) => {
-        toggleSection(e.currentTarget.dataset.section, e.currentTarget);
-    });
-});
-
-document.getElementById('calExportMoreLink').addEventListener('click', toggleCalExportMore);
-document.getElementById('calExportLessLink').addEventListener('click', toggleCalExportMore);

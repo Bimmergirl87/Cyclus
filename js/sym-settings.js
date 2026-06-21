@@ -4,7 +4,7 @@ let _draggingName = null, _draggingFrom = null;
 
 /* ─── build checkbox grid ──────────────────────────────── */
 function buildSymGrid() {
-    const checked = new Set(getCheckedValues('#symptomGrid'));
+    const checked  = new Set([...document.querySelectorAll('#symptomGrid input:checked')].map(c => c.value));
     const settings = loadSymSettings();
     const grid     = document.getElementById('symptomGrid');
     grid.innerHTML = '';
@@ -251,10 +251,7 @@ function addCustomSymToCategory(name, cat) {
     saveSymSettings(s);
     buildSymGrid();
     const cb = [...document.querySelectorAll('#symptomGrid input[type=checkbox]')].find(c => c.value === name);
-    if (cb) {
-        cb.checked = true;
-        syncSaveFeedback();
-    }
+    if (cb) { cb.checked = true; syncSaveFeedback(); }
 }
 
 ['addFysiekInput', 'addMentaalInput'].forEach(id => {

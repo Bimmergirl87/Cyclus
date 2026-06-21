@@ -1,34 +1,42 @@
 /* ─── symptom settings ─────────────────────────────────── */
+const SETTINGS_KEY = 'cyclus_sym_settings_v1';
+
 function loadSymSettings() {
-    const s = StorageAPI.getItem(STORAGE_KEYS.SYM_SETTINGS);
-    if (s && Array.isArray(s.shown) && Array.isArray(s.hidden)) {
-        const custom = new Set(s.custom || []);
-        const allSet = new Set(ALL_SYMPTOMS);
-        s.shown  = s.shown.filter(n => allSet.has(n) || custom.has(n));
-        s.hidden = s.hidden.filter(n => allSet.has(n) || custom.has(n));
-        ALL_SYMPTOMS.forEach(d => {
-            if (!s.shown.includes(d) && !s.hidden.includes(d)) s.shown.push(d);
-        });
-        return { shown: s.shown, hidden: s.hidden, custom: s.custom || [], customCats: s.customCats || {} };
-    }
+    try {
+        const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        if (s && Array.isArray(s.shown) && Array.isArray(s.hidden)) {
+            const custom = new Set(s.custom || []);
+            const allSet = new Set(ALL_SYMPTOMS);
+            // remove stale built-in names that no longer exist in ALL_SYMPTOMS
+            s.shown  = s.shown.filter(n => allSet.has(n) || custom.has(n));
+            s.hidden = s.hidden.filter(n => allSet.has(n) || custom.has(n));
+            ALL_SYMPTOMS.forEach(d => {
+                if (!s.shown.includes(d) && !s.hidden.includes(d)) s.shown.push(d);
+            });
+            return { shown: s.shown, hidden: s.hidden, custom: s.custom || [], customCats: s.customCats || {} };
+        }
+    } catch {}
     return { shown: [...ALL_SYMPTOMS], hidden: [], custom: [], customCats: {} };
 }
 
 function saveSymSettings(s) {
-    StorageAPI.setItem(STORAGE_KEYS.SYM_SETTINGS, s);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
 /* ─── localStorage ─────────────────────────────────────── */
+const STORAGE_KEY = 'cyclus_log_v1';
 function loadLogs() {
-    return StorageAPI.getItem(STORAGE_KEYS.CYCLE_LOG, {});
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
 }
-function saveLogs(logs) {
-    StorageAPI.setItem(STORAGE_KEYS.CYCLE_LOG, logs);
-}
+function saveLogs(logs) { localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
 
 function buildBackup() {
-    const setup = StorageAPI.getItem(STORAGE_KEYS.CYCLE_SETUP);
-    const dates = (setup && Array.isArray(setup.dates)) ? setup.dates : [];
+    let dates = [];
+    try {
+        const s = JSON.parse(localStorage.getItem('cyclus_setup_v1'));
+        if (s && Array.isArray(s.dates)) dates = s.dates;
+    } catch {}
     return { version: 2, cycle: { dates }, logs: loadLogs() };
 }
 
@@ -37,12 +45,14 @@ function exportLogs() {
     a.href = URL.createObjectURL(new Blob([JSON.stringify(buildBackup(), null, 2)], { type: 'application/json' }));
     a.download = 'cyclus_backup.json';
     a.click();
-    StorageAPI.setString(STORAGE_KEYS.LAST_BACKUP, Date.now().toString());
-    StorageAPI.removeItem(STORAGE_KEYS.BACKUP_SNOOZE);
+    localStorage.setItem(LAST_BACKUP_KEY, Date.now().toString());
+    localStorage.removeItem(SNOOZE_KEY);
     updateBackupReminder();
 }
 
 /* ─── backup-herinnering ───────────────────────────────── */
+const LAST_BACKUP_KEY = 'cyclus_last_backup';
+const SNOOZE_KEY = 'cyclus_backup_snooze';
 const BACKUP_REMINDER_DAYS = 5;
 
 function updateBackupReminder() {
@@ -50,13 +60,15 @@ function updateBackupReminder() {
     if (!el) return;
     const textEl = document.getElementById('backupReminderText');
 
+    // niets te beschermen? dan geen herinnering
     if (Object.keys(loadLogs()).length === 0) { el.style.display = 'none'; return; }
 
-    const snoozeUntil = parseInt(StorageAPI.getString(STORAGE_KEYS.BACKUP_SNOOZE, '0'), 10);
+    // gesnoozed? dan stil tot de snooze afloopt
+    const snoozeUntil = parseInt(localStorage.getItem(SNOOZE_KEY) || '0', 10);
     if (snoozeUntil && Date.now() < snoozeUntil) { el.style.display = 'none'; return; }
 
-    const last = parseInt(StorageAPI.getString(STORAGE_KEYS.LAST_BACKUP, '0'), 10);
-    const days = last ? Math.floor((Date.now() - last) / MS_PER_DAY) : Infinity;
+    const last = parseInt(localStorage.getItem(LAST_BACKUP_KEY) || '0', 10);
+    const days = last ? Math.floor((Date.now() - last) / 86400000) : Infinity;
 
     if (days < BACKUP_REMINDER_DAYS) { el.style.display = 'none'; return; }
 
@@ -70,7 +82,7 @@ function snoozeBackupReminder() {
     const inp = document.getElementById('backupSnoozeDays');
     let n = parseInt(inp && inp.value, 10);
     if (!Number.isFinite(n) || n < 1) n = BACKUP_REMINDER_DAYS;
-    StorageAPI.setString(STORAGE_KEYS.BACKUP_SNOOZE, (Date.now() + n * MS_PER_DAY).toString());
+    localStorage.setItem(SNOOZE_KEY, (Date.now() + n * 86400000).toString());
     updateBackupReminder();
 }
 function importLogs(file) {
@@ -95,14 +107,16 @@ function importLogs(file) {
 }
 
 /* ─── tips (werkt wel / niet) ──────────────────────────── */
+const TIPS_KEY = 'cyclus_tips_v1';
+
 function loadTips() {
-    const t = StorageAPI.getItem(STORAGE_KEYS.TIPS);
-    if (t && Array.isArray(t.well) && Array.isArray(t.not)) return t;
+    try {
+        const t = JSON.parse(localStorage.getItem(TIPS_KEY));
+        if (t && Array.isArray(t.well) && Array.isArray(t.not)) return t;
+    } catch {}
     return { well: [], not: [] };
 }
-function saveTips(t) {
-    StorageAPI.setItem(STORAGE_KEYS.TIPS, t);
-}
+function saveTips(t) { localStorage.setItem(TIPS_KEY, JSON.stringify(t)); }
 
 /* migrate old string values to array */
 function tipArray(val) {

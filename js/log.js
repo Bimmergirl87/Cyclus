@@ -67,7 +67,9 @@ function buildTipsGrids() {
         if (!grid) return;
         const tips    = loadTips();
         const editMode = tipsEditMode[type];
-        const checked = new Set(getCheckedValues('#' + gridId));
+        const checked = new Set(
+            [...grid.querySelectorAll('input:checked')].map(c => c.value)
+        );
         grid.innerHTML = '';
         if (editBtn) {
             editBtn.textContent = editMode ? 'Klaar' : 'Bewerk';
@@ -114,10 +116,7 @@ function addTipItem(type) {
     const gridId = type === 'well' ? 'worksWellGrid' : 'worksNotGrid';
     const grid = document.getElementById(gridId);
     const cb = [...grid.querySelectorAll('input')].find(c => c.value.toLowerCase() === val.toLowerCase());
-    if (cb) {
-        cb.checked = true;
-        syncSaveFeedback();
-    }
+    if (cb) { cb.checked = true; syncSaveFeedback(); }
     inp.value = '';
 }
 
@@ -173,29 +172,31 @@ function setAcc(id, open) {
 }
 
 function updateAccSummaries() {
-    const symCount = getCheckedCount('#symptomGrid');
+    const symCount = document.querySelectorAll('#symptomGrid input:checked').length;
     document.getElementById('accSumKlachten').textContent = symCount ? symCount + ' geselecteerd' : '';
 
     const notes = document.getElementById('logNotes').value.trim();
     document.getElementById('accSumNotities').textContent = notes ? '✓' : '';
 
-    const wellCount = getCheckedCount('#worksWellGrid');
-    const notCount = getCheckedCount('#worksNotGrid');
+    const wellCount = document.querySelectorAll('#worksWellGrid input:checked').length;
+    const notCount  = document.querySelectorAll('#worksNotGrid  input:checked').length;
     const parts = [];
     if (wellCount) parts.push(wellCount + ' wel');
-    if (notCount) parts.push(notCount + ' niet');
+    if (notCount)  parts.push(notCount  + ' niet');
     document.getElementById('accSumWerkt').textContent = parts.join(' · ');
 }
 
 function loadLogIntoForm(date) {
     const entry = loadLogs()[date];
-    const syms = entry ? (entry.symptoms || []) : [];
-    setCheckedValues('#symptomGrid', syms);
+    const syms  = entry ? (entry.symptoms || []) : [];
+    document.querySelectorAll('#symptomGrid input').forEach(c => {
+        c.checked = syms.includes(c.value);
+    });
     document.getElementById('logNotes').value = entry ? (entry.notes || '') : '';
-    const savedWell = entry ? tipArray(entry.worksWell) : [];
-    const savedNot = entry ? tipArray(entry.worksNot) : [];
-    setCheckedValues('#worksWellGrid', savedWell);
-    setCheckedValues('#worksNotGrid', savedNot);
+    const savedWell = new Set(entry ? tipArray(entry.worksWell) : []);
+    const savedNot  = new Set(entry ? tipArray(entry.worksNot)  : []);
+    document.querySelectorAll('#worksWellGrid input').forEach(c => { c.checked = savedWell.has(c.value); });
+    document.querySelectorAll('#worksNotGrid  input').forEach(c => { c.checked = savedNot.has(c.value);  });
     document.getElementById('saveFeedback').classList.toggle('visible', !!entry);
     setAcc('accKlachten', !entry);
     setAcc('accWerkt', false);
@@ -206,17 +207,17 @@ function loadLogIntoForm(date) {
 function syncSaveFeedback() {
     const entry = loadLogs()[logDateInput.value];
     if (!entry) { document.getElementById('saveFeedback').classList.remove('visible'); return; }
-    const current = new Set(getCheckedValues('#symptomGrid'));
-    const saved = new Set((entry.symptoms || []).map(s => typeof s === 'string' ? s : s.name));
+    const current   = new Set([...document.querySelectorAll('#symptomGrid input:checked')].map(c => c.value));
+    const saved     = new Set((entry.symptoms || []).map(s => typeof s === 'string' ? s : s.name));
     const symsMatch = current.size === saved.size && [...current].every(s => saved.has(s));
     const notesMatch = document.getElementById('logNotes').value.trim() === (entry.notes || '');
     function checkMatch(gridId, saved) {
-        const cur = new Set(getCheckedValues('#' + gridId));
+        const cur  = new Set([...document.querySelectorAll(`#${gridId} input:checked`)].map(c => c.value));
         const prev = new Set(tipArray(saved));
         return cur.size === prev.size && [...cur].every(v => prev.has(v));
     }
     const worksWellMatch = checkMatch('worksWellGrid', entry.worksWell);
-    const worksNotMatch = checkMatch('worksNotGrid', entry.worksNot);
+    const worksNotMatch  = checkMatch('worksNotGrid',  entry.worksNot);
     document.getElementById('saveFeedback').classList.toggle('visible', symsMatch && notesMatch && worksWellMatch && worksNotMatch);
     updateAccSummaries();
 }
@@ -232,13 +233,13 @@ loadLogIntoForm(logDateInput.value);
 document.getElementById('saveLogBtn').addEventListener('click', () => {
     const date = logDateInput.value;
     if (!date) return;
-    const symptoms = getCheckedValues('#symptomGrid');
-    const notes = document.getElementById('logNotes').value.trim();
-    const worksWell = getCheckedValues('#worksWellGrid');
-    const worksNot = getCheckedValues('#worksNotGrid');
-    const logs = loadLogs();
-    const cycleDay = cycleDayForDate(date);
-    logs[date] = { symptoms, notes, worksWell, worksNot, ...(cycleDay > 0 ? { cycleDay } : {}) };
+    const symptoms  = [...document.querySelectorAll('#symptomGrid input:checked')].map(c => c.value);
+    const notes     = document.getElementById('logNotes').value.trim();
+    const worksWell = [...document.querySelectorAll('#worksWellGrid input:checked')].map(c => c.value);
+    const worksNot  = [...document.querySelectorAll('#worksNotGrid  input:checked')].map(c => c.value);
+    const logs      = loadLogs();
+    const cycleDay  = cycleDayForDate(date);
+    logs[date]      = { symptoms, notes, worksWell, worksNot, ...(cycleDay > 0 ? { cycleDay } : {}) };
     saveLogs(logs);
     renderHistory();
     if (currentPhase) { renderPhaseSymContainer(currentPhase); renderPhaseSymCompare(currentPhase); renderPhaseTips(currentPhase); }
